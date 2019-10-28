@@ -42,6 +42,31 @@ df_defeso<- map_df(files, function(arquivo){
 
 names(df_defeso)<-c("mes_ano", "uf", "cod_SIAFI", "Municipio", "cpf_favorecido", "nis_favorecido", "rgp_favorecido", "nome_favorecido", "valor_parcela")
 
+
+
+df_defeso %>%
+  semi_join(ibama) %>%
+  distinct(Municipio)
+
+ibama %>%
+  distinct(Municipio)
+
+
+ibama%>%
+  anti_join(df_defeso) %>%
+  distinct(uf, Municipio)
+
+
+ibama[ibama$Municipio== "PORTO DE PEDRA",2]<- "PORTO DE PEDRAS"
+ibama[ibama$Municipio== "CEARAMIRIM",2]<- "CEARA-MIRIM"
+
+ibama[ibama$Municipio== "SAO CRISTOVAO",4]<- "SE"
+ibama[ibama$Municipio== "SIRINHAEM",4]<- "PE"
+ibama[ibama$Municipio== "ILHA GRANDE",4]<- "PI"
+
+save(list = c("df_defeso","ibama"),file = "oleogate.RData")
+
+
 library(ggplot2)
 
 df_defeso %>% 
@@ -50,24 +75,24 @@ df_defeso %>%
   summarise(
     soma_valor = sum(valor_parcela)
   ) %>% 
-  ggplot(aes(x= uf, y= soma_valor)) +
+  ggplot(aes(x= reorder(uf, soma_valor), y= soma_valor, fill= uf)) +
   geom_col() +
   coord_flip()
-  
+
 
 
 
 df_defeso %>%
   filter(
     uf %in% ((ibama%>%
-           distinct(uf))$uf)
+                distinct(uf))$uf)
   ) %>%
-  anti_join(ibama) %>%
+  #anti_join(ibama) %>%
   group_by(uf) %>%
   summarise(
     soma_valor = sum(valor_parcela)
   ) %>% 
-  ggplot(aes(x= uf, y= soma_valor)) +
+  ggplot(aes(x= reorder(uf, soma_valor), y= soma_valor, fill= uf)) +
   geom_col() +
   coord_flip()
 
@@ -75,23 +100,36 @@ df_defeso %>%
 
 df_defeso %>% 
   semi_join(ibama) %>%
-  group_by(Municipio) %>%
+  group_by(uf, Municipio) %>%
   summarise(
     soma_valor = sum(valor_parcela)
   ) %>% 
   ggplot(aes(x= soma_valor)) +
-  geom_histogram()
+  geom_histogram() +
+  facet_grid(uf~.)
 
 
 df_defeso %>% 
   semi_join(ibama) %>%
-  group_by(Municipio) %>%
+  group_by(uf,Municipio) %>%
   summarise(
     soma_valor = sum(valor_parcela)
   ) %>% 
   mutate(dummy_12= "12M") %>%
-  ggplot(aes(x= dummy_12, y= soma_valor)) +
-  geom_violin()
+  ggplot(aes(x= uf, y= soma_valor)) +
+  geom_violin(aes(fill=uf)) 
+
+df_defeso %>% 
+  semi_join(ibama) %>%
+  group_by(uf,Municipio) %>%
+  summarise(
+    soma_valor = sum(valor_parcela)
+  ) %>% 
+  mutate(dummy_12= "12M") %>%
+  ggplot(aes(x= uf, y= soma_valor)) +
+  geom_boxplot(aes(fill=uf)) 
+
+
 
 df_defeso %>% 
   semi_join(ibama) %>%
@@ -102,4 +140,3 @@ df_defeso %>%
   mutate(dummy_12= "12M") %>%
   ggplot(aes(x= dummy_12, y= soma_valor)) +
   geom_boxplot()
-
