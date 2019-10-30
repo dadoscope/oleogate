@@ -78,5 +78,6 @@ get_brmap("City", geo.filter = list(Region = 2)) %>%
   theme(panel.grid = element_line(colour = "transparent"),
         panel.background = element_blank(),
         axis.text = element_blank(),
-        axis.ticks = element_blank())
+        axis.ticks = element_blank(),
+        legend.position = "none")
 dev.off()
