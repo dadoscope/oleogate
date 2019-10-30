@@ -58,3 +58,22 @@ get_brmap("State", geo.filter = list(Region = 2)) %>%
   theme_bw()+
   ggtitle(paste("Defeso Nordeste - 2018/2019 (milhões de Reais)"))
 dev.off()
+
+
+load("../economia_oleo_mun.RData")
+png("../figures/mapa_cidades_atingidas.png",width=3200,height=1800,res=300)
+get_brmap("City", geo.filter = list(Region = 2)) %>% 
+  inner_join(df_dca_mun_sel_func, 
+             c("City" = "cod_ibge")) %>% 
+  ggplot() + geom_sf(aes(fill = populacao), 
+                     # ajusta tamanho das linhas
+                     colour = "transparent", size = 0.1) +
+  geom_sf(data = get_brmap("State", geo.filter = list(Region = 2)),
+          fill = "transparent",
+          colour = "black", size = 0.5) +
+  # muda escala de cores
+  scale_fill_viridis_c(option = 1, begin = 0.1, end = 0.1) +
+  # tira sistema cartesiano
+  ggtitle("Cidades atingidas pela mancha de óleo")+
+  theme_bw()
+dev.off()
