@@ -75,5 +75,8 @@ get_brmap("City", geo.filter = list(Region = 2)) %>%
   scale_fill_viridis_c(option = 1, begin = 0.1, end = 0.1) +
   # tira sistema cartesiano
   ggtitle("Cidades atingidas pela mancha de óleo")+
-  theme_bw()
+  theme(panel.grid = element_line(colour = "transparent"),
+        panel.background = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank())
 dev.off()
