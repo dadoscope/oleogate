@@ -81,3 +81,70 @@ get_brmap("City", geo.filter = list(Region = 2)) %>%
         axis.ticks = element_blank(),
         legend.position = "none")
 dev.off()
+
+
+
+load("../economia_NE.RData")
+load("../economia_oleo_mun.RData")
+
+names(PIB_Mun_sel)[40:45]<-c("PIB",  "População", "PIB_per_capita", "PIB_1","PIB_2","PIB_3")
+names(PIB_Mun_NE)[43:45]<-c("PIB_1","PIB_2","PIB_3")
+
+PIB_Mun_sel %>%
+  filter(Ano==2016) %>%
+  select(codigo_municipio, 43:45) %>%
+  mutate(grupo =case_when(
+    str_count(PIB_1,"pesca")>0 ~ "Pesca principal PIB",
+    str_count(PIB_2,"pesca")>0 ~ "Pesca segundo PIB",
+    str_count(PIB_3,"pesca")>0 ~ "PIB terceiro PIB",
+    TRUE                       ~ "Pesca não pertence ao PIB 3"
+  )) %>%
+  ggplot(aes(x=grupo)) +
+  geom_bar()+
+  coord_flip()
+
+PIB_Mun_sel$grupo_cidades <- rep("Cidades afetaads", nrow(PIB_Mun_sel))
+PIB_Mun_NE$grupo_cidades <- rep("Demais Cidades NE", nrow(PIB_Mun_NE))
+names(PIB_Mun_NE) <- names(PIB_Mun_sel)
+all_PIB_Mun <- rbind(PIB_Mun_sel, PIB_Mun_NE)
+
+get_brmap("City", geo.filter = list(Region = 2)) %>% 
+  inner_join(all_PIB_Mun, 
+             c("City" = "codigo_municipio",
+               "State" = "Código da Unidade da Federação")) %>% 
+  ggplot() + geom_sf(aes(fill = grupo_cidades), 
+                     # ajusta tamanho das linhas
+                     colour = "transparent", size = 0.1) +
+  geom_sf(data = get_brmap("State", geo.filter = list(Region = 2)),
+          fill = "transparent",
+          colour = "black", size = 0.5) +
+  # muda escala de cores
+  # tira sistema cartesiano
+  ggtitle("Cidades do Nordeste atingidas pela mancha de óleo")+
+  theme(panel.grid = element_line(colour = "transparent"),
+        panel.background = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        legend.position = "none")
+
+
+get_brmap("City", geo.filter = list(Region = 2)) %>% 
+  inner_join(all_PIB_Mun, 
+             c("City" = "codigo_municipio",
+               "State" = "Código da Unidade da Federação")) %>% 
+  ggplot() + geom_sf(aes(fill = PIB_per_capita), 
+                     # ajusta tamanho das linhas
+                     colour = "transparent", size = 0.1) +
+  geom_sf(data = get_brmap("State", geo.filter = list(Region = 2)),
+          fill = "transparent",
+          colour = "black", size = 0.5) +
+  # muda escala de cores
+  # tira sistema cartesiano
+  scale_fill_viridis_c(option = 1, begin = 0.3, end = 0.9) +
+  ggtitle("PIB per capita de Cidades do Nordeste")+
+  theme(panel.grid = element_line(colour = "transparent"),
+        panel.background = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        legend.direction = "vertical") +
+  facet_wrap(~grupo_cidades)
