@@ -128,6 +128,9 @@ get_brmap("City", geo.filter = list(Region = 2)) %>%
         legend.position = "none")
 
 
+#### PIB per capita
+
+
 get_brmap("City", geo.filter = list(Region = 2)) %>% 
   inner_join(all_PIB_Mun, 
              c("City" = "codigo_municipio",
@@ -148,3 +151,81 @@ get_brmap("City", geo.filter = list(Region = 2)) %>%
         axis.ticks = element_blank(),
         legend.direction = "vertical") +
   facet_wrap(~grupo_cidades)
+
+
+#### receita liquida
+
+get_brmap("City", geo.filter = list(Region = 2)) %>% 
+  inner_join(df_dca_mun_sel_RO_tidy %>%
+               mutate(grupo="Cidades afetadas") %>%
+               bind_rows(
+                 df_dca_NE_RO_tidy %>%
+                   anti_join(df_dca_mun_sel_RO_tidy) %>%
+                   mutate(grupo="Demais Cidades NE") 
+               ), 
+             c("City" = "cod_ibge")) %>% 
+  ggplot() + geom_sf(aes(fill = log10(receita_liquida_total)), 
+                     # ajusta tamanho das linhas
+                     colour = "transparent", size = 0.1) +
+  geom_sf(data = get_brmap("State", geo.filter = list(Region = 2)),
+          fill = "transparent",
+          colour = "black", size = 0.5) +
+  # muda escala de cores
+  # tira sistema cartesiano
+  scale_fill_viridis_c(option = 1, begin = 0.1, end = 0.9) +
+  ggtitle("Receita líquida das Cidades do Nordeste")+
+  theme(panel.grid = element_line(colour = "transparent"),
+        panel.background = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        legend.direction = "vertical") 
+
+
+#@@@@ Indice de dependencia
+
+
+get_brmap("City", geo.filter = list(Region = 2)) %>% 
+  inner_join(df_dca_mun_sel_RO_tidy %>%
+               mutate(grupo="Cidades afetadas") %>%
+               bind_rows(
+                 df_dca_NE_RO_tidy %>%
+                   anti_join(df_dca_mun_sel_RO_tidy) %>%
+                   mutate(grupo="Demais Cidades NE") 
+               ), 
+             c("City" = "cod_ibge")) %>% 
+  ggplot() + geom_sf(aes(fill = indice_dependencia), 
+                     # ajusta tamanho das linhas
+                     colour = "transparent", size = 0.1) +
+  geom_sf(data = get_brmap("State", geo.filter = list(Region = 2)),
+          fill = "transparent",
+          colour = "black", size = 0.5) +
+  geom_polygon(data = aes(x = long, y = lat, group = group, fill ="transparent"), colour = "black") +
+  # muda escala de cores
+  # tira sistema cartesiano
+  scale_fill_viridis_c(option = 3) +
+  ggtitle("Índice de dependência")+
+  theme(panel.grid = element_line(colour = "transparent"),
+        panel.background = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        legend.direction = "vertical") 
+
+
+#####
+
+
+df_dca_mun_sel_RO_tidy %>%
+  mutate(grupo="Cidades afetadas") %>%
+  bind_rows(
+    df_dca_NE_RO_tidy %>%
+      anti_join(df_dca_mun_sel_RO_tidy) %>%
+      mutate(grupo="Demais Cidades NE") 
+  ) %>%
+  filter(grupo == "Cidades afetadas") %>%
+  ggplot(aes(x = receita_liquida_total/1000, fill = "red")) + 
+  theme_bw()+
+  guides(fill=FALSE)+
+  labs(title = "Cidades afetadas - Histograma de receita líquida total",
+       x = "Receita líquida (Milhares de Reais)",
+       y = "Número de cidades",
+       fill = "")
