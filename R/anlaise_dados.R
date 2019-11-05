@@ -1,5 +1,12 @@
 library(ggplot2)
+
 library(dplyr)
+
+library(stringr)
+library(lares)
+
+
+###Gráficos diversos para exploração de dados
 
 df_defeso %>% 
   semi_join(ibama) %>%
@@ -63,6 +70,8 @@ df_defeso %>%
 
 
 
+####GRárico de comparação do seguro defeso
+
 df_defeso %>% 
   semi_join(ibama) %>%
   group_by(Municipio) %>%
@@ -85,13 +94,13 @@ df_defeso %>%
   )%>%
 ggplot(aes(x= grupo, y= soma_valor)) +
   geom_boxplot(aes(fill=grupo)) +
-  scale_y_log10()
+  scale_y_log10(labels=function(x) format(x, big.mark = ".", scientific = FALSE)) +
+  theme_light()+
+  labs(x="",
+       y="Valor total em R$")
 
 
-
-
-glimpse(df_dca_mun_sel_func)
-
+####GRárico de comparação de despesa com meio-ambiente
 
 
 df_dca_mun_sel_func%>%
@@ -108,8 +117,14 @@ df_dca_mun_sel_func%>%
              desp_per_capita = valor/populacao)
   ) %>%
   ggplot(aes(x= grupo, y= desp_per_capita)) +
-  geom_boxplot(aes(fill=grupo))+
-  scale_y_log10()
+  geom_boxplot(aes(fill=grupo)) +
+  scale_y_log10(labels=function(x) format(x, big.mark = ".", scientific = FALSE)) +
+  theme_light()+
+  labs(x="",
+       y="Valor por habitante em R$")
+
+
+### Gráfico de despesa com saúde
 
 
 df_dca_mun_sel_func%>%
@@ -127,8 +142,13 @@ df_dca_mun_sel_func%>%
   ) %>%
   ggplot(aes(x= grupo, y= desp_per_capita)) +
   geom_boxplot(aes(fill=grupo))+
-  scale_y_log10()
+  scale_y_log10(labels=function(x) format(x, big.mark = ".", scientific = FALSE)) +
+  theme_light()+
+  labs(x="",
+       y="Valor por habitante em R$")
 
+
+##### GRáfico de despesa com turismo
 
 df_dca_mun_sel_func%>%
   filter(cod_interno=="23.695",
@@ -145,14 +165,16 @@ df_dca_mun_sel_func%>%
   ) %>%
   ggplot(aes(x= grupo, y= desp_per_capita)) +
   geom_boxplot(aes(fill=grupo)) +
-  scale_y_log10()
+  scale_y_log10(labels=function(x) format(x, big.mark = ".", scientific = FALSE)) +
+  theme_light()+
+  labs(x="",
+       y="Valor por habitante em R$")
 
 
+
+##Gráfico de dependência de transferência intergovernamental
 library(tidyr)
-library(stringr)
 
-1.7.0.0.00.0.0
-2.4.0.0.00.0.0
 
 df_dca_mun_sel_RO_tidy<-
 df_dca_mun_sel_RO %>% 
@@ -258,24 +280,31 @@ bind_rows(
     mutate(grupo="Demais Cidades NE") 
 ) %>%
   ggplot()+
-  geom_boxplot(aes(x=grupo, y=indice_dependencia, fill= grupo))
+  geom_boxplot(aes(x=grupo, y=indice_dependencia, fill= grupo))+
+  scale_y_percent()+
+  theme_light()+
+  labs(x="",
+       y="Percentual de dependência")
 
 
-names(PIB_Mun_sel)[40:45]<-c("PIB",  "População", "PIB_per_capita", "PIB_1","PIB_2","PIB_3")
-names(PIB_Mun_NE)[43:45]<-c("PIB_1","PIB_2","PIB_3")
 
-PIB_Mun_sel %>%
-  filter(Ano==2016) %>%
-  select(codigo_municipio, 43:45) %>%
-  mutate(grupo =case_when(
-    str_count(PIB_1,"pesca")>0 ~ "Pesca principal PIB",
-    str_count(PIB_2,"pesca")>0 ~ "Pesca segundo PIB",
-    str_count(PIB_3,"pesca")>0 ~ "PIB terceiro PIB",
-    TRUE                       ~ "Pesca não pertence ao PIB 3"
-  )) %>%
-  ggplot(aes(x=grupo)) +
-  geom_bar()+
-  coord_flip()
+##Mudança de nome de colunas
+names(PIB_Mun_sel)[c(8,40:45)]<-c("Municipio","PIB",  "População", "PIB_per_capita", "PIB_1","PIB_2","PIB_3")
+names(PIB_Mun_NE)[c(8,40:45)]<-c("Municipio","PIB",  "População", "PIB_per_capita", "PIB_1","PIB_2","PIB_3")
+
+##Tratamento dos dados de seguro defeso
+PIB_Mun_sel$Municipio <- str_to_upper(cleanText(PIB_Mun_sel$Municipio))
+
+
+PIB_Mun_NE$Municipio <- str_to_upper(cleanText(PIB_Mun_NE$Municipio))
+
+#GRáficos de barra com comparação entre cidades com pesca que pertence ao PIB3
+df_defeso_NE<-
+  df_defeso %>%
+  inner_join(
+    PIB_Mun_NE%>%
+      select(Municipio, codigo_municipio ))
+
 
 PIB_Mun_sel %>%
   filter(Ano==2016) %>%
@@ -286,23 +315,51 @@ PIB_Mun_sel %>%
     str_count(PIB_3,"pesca")>0 ~ "Pesca PIB 3",
     TRUE                       ~ "Pesca não pertence ao PIB 3"
   )) %>%
-  ggplot(aes(x=grupo)) +
+  ggplot(aes(x=grupo, fill =grupo)) +
   geom_bar()+
-  coord_flip()
+  coord_flip()+
+  scale_y_comma()+
+  theme_light()+
+  labs(x="",
+       y="Número de cidades")
 
 
-PIB_Mun_NE %>%
+#GRáficos de barra com comparação entre cidades com pesca que pertence ao PIB3 com os dois grupos de cidade
+PIB_Mun_sel %>%
   filter(Ano==2016) %>%
   select(codigo_municipio, 43:45) %>%
-  mutate(grupo =case_when(
-    str_count(PIB_1,"pesca")>0 ~ "Pesca principal PIB",
-    str_count(PIB_2,"pesca")>0 ~ "Pesca segundo PIB",
-    str_count(PIB_3,"pesca")>0 ~ "PIB terceiro PIB",
+  mutate( grupo_cidade = "Cidades Atingidas",
+    grupo_PIB =case_when(
+    str_count(PIB_1,"pesca")>0 ~ "Pesca PIB 3",
+    str_count(PIB_2,"pesca")>0 ~ "Pesca PIB 3",
+    str_count(PIB_3,"pesca")>0 ~ "Pesca PIB 3",
     TRUE                       ~ "Pesca não pertence ao PIB 3"
   )) %>%
-  ggplot(aes(x=grupo)) +
-  geom_point(aes(x=população, y=PIB, color=grupo))
+bind_rows(
+  PIB_Mun_NE %>%
+    anti_join(PIB_Mun_sel) %>%
+    filter(Ano==2016) %>%
+    select(codigo_municipio, 43:45) %>%
+    mutate(grupo_cidade = "Demais Cidades NE",
+           grupo =case_when(
+             str_count(PIB_1,"pesca")>0 ~ "Pesca PIB 3",
+             str_count(PIB_2,"pesca")>0 ~ "Pesca PIB 3",
+             str_count(PIB_3,"pesca")>0 ~ "Pesca PIB 3",
+             TRUE                       ~ "Pesca não pertence ao PIB 3"
+           ))
+)  %>% 
+   ggplot(aes(x=grupo, fill= grupo)) +
+  geom_bar()+
+  coord_flip()+
+  scale_y_comma()+
+  theme_light()+
+  labs(x="",
+       y="Número de cidades")+
+  facet_grid(grupo_cidade~.)
 
+
+
+#Gráfico de dispersão de população x renda per capita comparando as cidades com pensa no PIB 3 com as demais
 PIB_Mun_sel %>%
   filter(Ano==2016) %>%
   select(codigo_municipio, 40:45) %>%
@@ -313,38 +370,41 @@ PIB_Mun_sel %>%
     TRUE                       ~ "Pesca não pertence ao PIB 3"
   )) %>%
   ggplot() +
-  geom_point(aes(x=População, y=PIB, color=grupo))+
-  scale_x_log10()+
-  scale_y_log10()
+  geom_point(aes(x=População, y=PIB_per_capita, color=grupo),alpha = 0.5)+
+  scale_x_log10(labels=function(x) format(x, big.mark = ".", scientific = FALSE))+
+  scale_y_log10(labels=function(x) format(x, big.mark = ".", scientific = FALSE))+
+  theme_light()+
+  labs(x="População",
+       y="PIB per capita em R$")
+
+
+
+###GRáfico de dispersão de população e renda per capita com os dois grupos de cidade
+
+PIB_Mun_sel %>%
+      filter(Ano==2016) %>%
+      select(codigo_municipio, 40:45) %>%
+      mutate( grupo = "Cidades atingidas") %>%
+
+bind_rows(
+  PIB_Mun_NE %>%
+    anti_join(PIB_Mun_sel) %>%
+    filter(Ano==2016) %>%
+    select(codigo_municipio, 40:45) %>%
+    mutate( grupo = "Demais Cidades NE") 
+)  %>%
+  ggplot() +
+  geom_point(aes(x=População, y=PIB_per_capita, color=grupo), alpha= 0.5)+
+  scale_x_log10(labels=function(x) format(x, big.mark = ".", scientific = FALSE))+
+  scale_y_log10(labels=function(x) format(x, big.mark = ".", scientific = FALSE))+
+                  theme_light()+
+                  labs(x="População",
+                       y="PIB per capita em R$")
+                
 
   
-  
-    geom_bar()+
-  coord_flip()
 
 
 
-PIB_Mun_NE %>%
-  filter(Ano==2016) %>%
-  select(codigo_municipio, 40:45) %>%
-  mutate(grupo =case_when(
-    str_count(PIB_1,"pesca")>0 ~ "Pesca principal PIB",
-    str_count(PIB_2,"pesca")>0 ~ "Pesca segundo PIB",
-    str_count(PIB_3,"pesca")>0 ~ "PIB terceiro PIB",
-    TRUE                       ~ "Pesca não pertence ao PIB 3"
-  )) %>%
-  ggplot(aes(x=grupo)) +
-  geom_bar()+
-  coord_flip()
-
-
-
-
-
-    
-         pesca_prim=if_else(str_count(PIB_1,"pesca")>0,1,0),
-         pesca_sec=if_else(str_count(PIB_2,"pesca")>0,1,0),
-         pesca_terc=if_else(str_count(PIB_3,"pesca")>0,1,0)) %>%
-  ggplot()
 
   
